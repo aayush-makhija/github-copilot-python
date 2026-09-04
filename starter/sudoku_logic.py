@@ -98,6 +98,20 @@ def remove_cells(board, clues):
         if count_solutions(board) != 1:
             board[row][col] = value
 
+DIFFICULTY_CLUES = {
+    "easy": 45,
+    "medium": 35,
+    "hard": 25,
+}
+
+
+def clue_count_for_difficulty(difficulty):
+    try:
+        return DIFFICULTY_CLUES[difficulty.lower()]
+    except (AttributeError, KeyError):
+        raise ValueError(
+            "difficulty must be easy, medium, or hard"
+        )
 
 def generate_puzzle(clues=35):
     board = create_empty_board()

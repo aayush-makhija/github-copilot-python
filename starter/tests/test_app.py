@@ -64,3 +64,38 @@ def test_check_reports_incorrect_cells(client):
 
     assert response.status_code == 200
     assert response.get_json()["incorrect"] == [[0, 0]]
+
+@pytest.mark.parametrize(
+    ("difficulty", "expected_clues"),
+    [
+        ("easy", 45),
+        ("medium", 35),
+        ("hard", 25),
+    ],
+)
+def test_new_game_uses_selected_difficulty(
+    client,
+    difficulty,
+    expected_clues,
+):
+    response = client.get(f"/new?difficulty={difficulty}")
+
+    assert response.status_code == 200
+
+    puzzle = response.get_json()["puzzle"]
+    clues = sum(
+        cell != sudoku_logic.EMPTY
+        for row in puzzle
+        for cell in row
+    )
+
+    assert clues == expected_clues
+
+
+def test_new_game_rejects_invalid_difficulty(client):
+    response = client.get("/new?difficulty=expert")
+
+    assert response.status_code == 400
+    assert response.get_json() == {
+        "error": "difficulty must be easy, medium, or hard"
+    }

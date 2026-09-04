@@ -48,8 +48,15 @@ function renderPuzzle(puz) {
 }
 
 async function newGame() {
-  const res = await fetch('/new');
+  const difficulty = document.getElementById('difficulty').value;
+  const res = await fetch(`/new?difficulty=${encodeURIComponent(difficulty)}`);
   const data = await res.json();
+
+  if (data.error) {
+    document.getElementById('message').innerText = data.error;
+    return;
+  }
+
   renderPuzzle(data.puzzle);
   document.getElementById('message').innerText = '';
 }
@@ -68,8 +75,8 @@ async function checkSolution() {
   }
   const res = await fetch('/check', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({board})
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ board }),
   });
   const data = await res.json();
   const msg = document.getElementById('message');
@@ -78,7 +85,7 @@ async function checkSolution() {
     msg.innerText = data.error;
     return;
   }
-  const incorrect = new Set(data.incorrect.map(x => x[0]*SIZE + x[1]));
+  const incorrect = new Set(data.incorrect.map((x) => x[0] * SIZE + x[1]));
   for (let idx = 0; idx < inputs.length; idx++) {
     const inp = inputs[idx];
     if (inp.disabled) continue;
@@ -99,7 +106,6 @@ async function checkSolution() {
 // Wire buttons
 window.addEventListener('load', () => {
   document.getElementById('new-game').addEventListener('click', newGame);
-  document.getElementById('check-solution').addEventListener('click', checkSolution);
-  // initialize
+  document.getElementById('difficulty').addEventListener('change', newGame);
   newGame();
 });

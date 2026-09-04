@@ -109,3 +109,25 @@ def test_remove_cells_preserves_requested_clue_count_and_uniqueness():
         for cell in row
     ) == 35
     assert sudoku_logic.count_solutions(board) == 1
+
+import pytest
+
+
+@pytest.mark.parametrize(
+    ("difficulty", "expected_clues"),
+    [
+        ("easy", 45),
+        ("medium", 35),
+        ("hard", 25),
+    ],
+)
+def test_clue_count_for_difficulty(difficulty, expected_clues):
+    assert (
+        sudoku_logic.clue_count_for_difficulty(difficulty)
+        == expected_clues
+    )
+
+
+def test_clue_count_for_difficulty_rejects_invalid_value():
+    with pytest.raises(ValueError):
+        sudoku_logic.clue_count_for_difficulty("expert")
