@@ -4,7 +4,82 @@ let timerInterval = null;
 let timerStart = null;
 const SIZE = 9;
 let puzzle = [];
+let hintsUsed = 0;
+let currentDifficulty = 'medium';
 
+const LEADERBOARD_KEY = 'sudokuLeaderboard';
+function loadLeaderboard() {
+  try {
+    const scores = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
+    return Array.isArray(scores) ? scores : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveScore(score) {
+  const scores = [...loadLeaderboard(), score];
+
+  scores.sort(
+    (left, right) =>
+      left.timeSeconds - right.timeSeconds || left.hintsUsed - right.hintsUsed,
+  );
+
+  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(scores.slice(0, 10)));
+}
+
+function formatScoreTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  return `${String(minutes).padStart(2, '0')}:${String(
+    remainingSeconds,
+  ).padStart(2, '0')}`;
+}
+
+function renderLeaderboard() {
+  const leaderboardBody = document.getElementById('leaderboard-body');
+
+  if (!leaderboardBody) {
+    return;
+  }
+
+  leaderboardBody.innerHTML = '';
+
+  loadLeaderboard().forEach((score, index) => {
+    const row = document.createElement('tr');
+
+    [
+      index + 1,
+      score.name,
+      formatScoreTime(score.timeSeconds),
+      score.difficulty,
+      score.hintsUsed,
+    ].forEach((value) => {
+      const cell = document.createElement('td');
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+
+    leaderboardBody.appendChild(row);
+  });
+}
+
+function recordScore() {
+  const nameInput = document.getElementById('player-name');
+  const name = nameInput.value.trim() || 'Anonymous';
+  const timeSeconds = Math.floor((Date.now() - timerStart) / 1000);
+
+  saveScore({
+    name,
+    timeSeconds,
+    difficulty: currentDifficulty,
+    hintsUsed,
+    completedAt: new Date().toISOString(),
+  });
+
+  renderLeaderboard();
+}
 function createBoardElement() {
   const boardDiv = document.getElementById('sudoku-board');
   boardDiv.innerHTML = '';
@@ -119,6 +194,7 @@ async function requestHint() {
   input.value = data.value;
   input.disabled = true;
   input.className = 'sudoku-cell hinted';
+  hintsUsed += 1;
 
   message.style.color = '#388e3c';
   message.innerText = 'Hint added.';
@@ -203,12 +279,18 @@ async function newGame() {
     return;
   }
 
+  currentDifficulty = difficulty;
+  hintsUsed = 0;
+
   renderPuzzle(data.puzzle);
   startTimer();
   document.getElementById('message').innerText = '';
 }
 
 async function checkSolution() {
+  if (gameCompleted) {
+    return;
+  }
   const boardDiv = document.getElementById('sudoku-board');
   const inputs = boardDiv.getElementsByTagName('input');
   const board = [];
@@ -243,6 +325,7 @@ async function checkSolution() {
   }
   if (incorrect.size === 0) {
     finishGame();
+    recordScore();
   } else {
     msg.style.color = '#d32f2f';
     msg.innerText = 'Some cells are incorrect.';
@@ -257,5 +340,7 @@ window.addEventListener('load', () => {
     .getElementById('check-solution')
     .addEventListener('click', checkSolution);
   document.getElementById('hint').addEventListener('click', requestHint);
+
+  renderLeaderboard();
   newGame();
 });
