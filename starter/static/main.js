@@ -1,3 +1,4 @@
+let gameCompleted = false;
 // Client-side rendering and interaction for the Flask-backed Sudoku
 let timerInterval = null;
 let timerStart = null;
@@ -17,9 +18,13 @@ function createBoardElement() {
       input.className = 'sudoku-cell';
       input.dataset.row = i;
       input.dataset.col = j;
-      input.addEventListener('input', (e) => {
-        const val = e.target.value.replace(/[^1-9]/g, '');
-        e.target.value = val;
+      input.addEventListener('input', (event) => {
+        if (gameCompleted) {
+          return;
+        }
+        const value = event.target.value.replace(/[^1-9]/g, '');
+        event.target.value = value;
+        validateCell(event.target);
       });
       rowDiv.appendChild(input);
     }
@@ -27,7 +32,30 @@ function createBoardElement() {
   }
 }
 
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+function finishGame() {
+  gameCompleted = true;
+  stopTimer();
+
+  const inputs = document
+    .getElementById('sudoku-board')
+    .getElementsByTagName('input');
+
+  for (const input of inputs) {
+    input.disabled = true;
+  }
+
+  const message = document.getElementById('message');
+  message.style.color = '#388e3c';
+  message.innerText = 'Congratulations! You solved it!';
+}
+
 function renderPuzzle(puz) {
+  gameCompleted = false;
   puzzle = puz;
   createBoardElement();
   const boardDiv = document.getElementById('sudoku-board');
@@ -46,6 +74,102 @@ function renderPuzzle(puz) {
         inp.disabled = false;
       }
     }
+  }
+}
+
+function getCurrentBoard() {
+  const inputs = document
+    .getElementById('sudoku-board')
+    .getElementsByTagName('input');
+
+  const board = [];
+
+  for (let row = 0; row < SIZE; row++) {
+    board[row] = [];
+
+    for (let col = 0; col < SIZE; col++) {
+      const input = inputs[row * SIZE + col];
+      board[row][col] = input.value ? parseInt(input.value, 10) : 0;
+    }
+  }
+
+  return board;
+}
+
+async function requestHint() {
+  const res = await fetch('/hint', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ board: getCurrentBoard() }),
+  });
+
+  const data = await res.json();
+  const message = document.getElementById('message');
+
+  if (data.error) {
+    message.style.color = '#d32f2f';
+    message.innerText = data.error;
+    return;
+  }
+
+  const input = document.querySelector(
+    `.sudoku-cell[data-row="${data.row}"][data-col="${data.col}"]`,
+  );
+
+  input.value = data.value;
+  input.disabled = true;
+  input.className = 'sudoku-cell hinted';
+
+  message.style.color = '#388e3c';
+  message.innerText = 'Hint added.';
+}
+
+function isValidMove(board, row, col, value) {
+  for (let index = 0; index < SIZE; index++) {
+    if (index !== col && board[row][index] === value) {
+      return false;
+    }
+
+    if (index !== row && board[index][col] === value) {
+      return false;
+    }
+  }
+
+  const boxRow = row - (row % 3);
+  const boxCol = col - (col % 3);
+
+  for (let boxRowIndex = boxRow; boxRowIndex < boxRow + 3; boxRowIndex++) {
+    for (let boxColIndex = boxCol; boxColIndex < boxCol + 3; boxColIndex++) {
+      if (
+        (boxRowIndex !== row || boxColIndex !== col) &&
+        board[boxRowIndex][boxColIndex] === value
+      ) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+function validateCell(input) {
+  if (gameCompleted) {
+    return;
+  }
+  const value = input.value ? parseInt(input.value, 10) : 0;
+
+  input.classList.remove('invalid');
+
+  if (!value) {
+    return;
+  }
+
+  const board = getCurrentBoard();
+  const row = Number(input.dataset.row);
+  const col = Number(input.dataset.col);
+
+  if (!isValidMove(board, row, col, value)) {
+    input.classList.add('invalid');
   }
 }
 
@@ -118,8 +242,7 @@ async function checkSolution() {
     }
   }
   if (incorrect.size === 0) {
-    msg.style.color = '#388e3c';
-    msg.innerText = 'Congratulations! You solved it!';
+    finishGame();
   } else {
     msg.style.color = '#d32f2f';
     msg.innerText = 'Some cells are incorrect.';
@@ -133,5 +256,6 @@ window.addEventListener('load', () => {
   document
     .getElementById('check-solution')
     .addEventListener('click', checkSolution);
+  document.getElementById('hint').addEventListener('click', requestHint);
   newGame();
 });
