@@ -8,6 +8,32 @@ let hintsUsed = 0;
 let currentDifficulty = 'medium';
 
 const LEADERBOARD_KEY = 'sudokuLeaderboard';
+const THEME_KEY = 'sudokuTheme';
+
+function applyTheme(theme) {
+  const isDark = theme === 'dark';
+
+  document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+
+  const toggle = document.getElementById('theme-toggle');
+  toggle.setAttribute('aria-pressed', String(isDark));
+  toggle.textContent = isDark ? 'Light mode' : 'Dark mode';
+}
+
+function initializeTheme() {
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  const theme = savedTheme === 'dark' ? 'dark' : 'light';
+
+  applyTheme(theme);
+
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const nextTheme =
+      document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+
+    localStorage.setItem(THEME_KEY, nextTheme);
+    applyTheme(nextTheme);
+  });
+}
 function loadLeaderboard() {
   try {
     const scores = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
@@ -125,7 +151,7 @@ function finishGame() {
   }
 
   const message = document.getElementById('message');
-  message.style.color = '#388e3c';
+  message.className = 'message-success';
   message.innerText = 'Congratulations! You solved it!';
 }
 
@@ -196,7 +222,7 @@ async function requestHint() {
   input.className = 'sudoku-cell hinted';
   hintsUsed += 1;
 
-  message.style.color = '#388e3c';
+  message.className = 'message-success';
   message.innerText = 'Hint added.';
 }
 
@@ -284,7 +310,9 @@ async function newGame() {
 
   renderPuzzle(data.puzzle);
   startTimer();
-  document.getElementById('message').innerText = '';
+  const message = document.getElementById('message');
+  message.className = '';
+  message.innerText = '';
 }
 
 async function checkSolution() {
@@ -310,8 +338,8 @@ async function checkSolution() {
   const data = await res.json();
   const msg = document.getElementById('message');
   if (data.error) {
-    msg.style.color = '#d32f2f';
-    msg.innerText = data.error;
+    msg.className = 'message-error';
+    msg.innerText = 'Some cells are incorrect.';
     return;
   }
   const incorrect = new Set(data.incorrect.map((x) => x[0] * SIZE + x[1]));
@@ -334,6 +362,8 @@ async function checkSolution() {
 
 // Wire buttons
 window.addEventListener('load', () => {
+  initializeTheme();
+
   document.getElementById('new-game').addEventListener('click', newGame);
   document.getElementById('difficulty').addEventListener('change', newGame);
   document
