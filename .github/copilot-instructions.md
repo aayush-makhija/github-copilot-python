@@ -38,4 +38,4 @@ Testing:
 
 - Use pytest.
 - Preserve existing behavior during refactoring.
-- Add tests for Sudoku generation and validation logic.
+- Add tests for Sudoku generation and validation logic.=[]p
