@@ -85,3 +85,27 @@ def test_generate_puzzle_returns_puzzle_and_solution():
         for column in range(9):
             if puzzle[row][column] != sudoku_logic.EMPTY:
                 assert puzzle[row][column] == solution[row][column]
+def test_count_solutions_returns_one_for_generated_puzzle():
+    puzzle, _ = sudoku_logic.generate_puzzle(clues=35)
+
+    assert sudoku_logic.count_solutions(puzzle) == 1
+
+
+def test_count_solutions_stops_at_two_for_empty_board():
+    board = sudoku_logic.create_empty_board()
+
+    assert sudoku_logic.count_solutions(board) == 2
+
+
+def test_remove_cells_preserves_requested_clue_count_and_uniqueness():
+    board = sudoku_logic.create_empty_board()
+    sudoku_logic.fill_board(board)
+
+    sudoku_logic.remove_cells(board, clues=35)
+
+    assert sum(
+        cell != sudoku_logic.EMPTY
+        for row in board
+        for cell in row
+    ) == 35
+    assert sudoku_logic.count_solutions(board) == 1
