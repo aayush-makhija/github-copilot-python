@@ -1,4 +1,6 @@
 // Client-side rendering and interaction for the Flask-backed Sudoku
+let timerInterval = null;
+let timerStart = null;
 const SIZE = 9;
 let puzzle = [];
 
@@ -47,6 +49,26 @@ function renderPuzzle(puz) {
   }
 }
 
+function formatElapsedTime(milliseconds) {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+
+  timerStart = Date.now();
+  document.getElementById('timer').innerText = '00:00';
+
+  timerInterval = setInterval(() => {
+    const elapsed = Date.now() - timerStart;
+    document.getElementById('timer').innerText = formatElapsedTime(elapsed);
+  }, 1000);
+}
+
 async function newGame() {
   const difficulty = document.getElementById('difficulty').value;
   const res = await fetch(`/new?difficulty=${encodeURIComponent(difficulty)}`);
@@ -58,6 +80,7 @@ async function newGame() {
   }
 
   renderPuzzle(data.puzzle);
+  startTimer();
   document.getElementById('message').innerText = '';
 }
 
@@ -107,5 +130,8 @@ async function checkSolution() {
 window.addEventListener('load', () => {
   document.getElementById('new-game').addEventListener('click', newGame);
   document.getElementById('difficulty').addEventListener('change', newGame);
+  document
+    .getElementById('check-solution')
+    .addEventListener('click', checkSolution);
   newGame();
 });
