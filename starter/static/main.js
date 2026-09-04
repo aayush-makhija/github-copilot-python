@@ -108,12 +108,17 @@ function recordScore() {
 }
 function createBoardElement() {
   const boardDiv = document.getElementById('sudoku-board');
+
   boardDiv.innerHTML = '';
   for (let i = 0; i < SIZE; i++) {
     const rowDiv = document.createElement('div');
     rowDiv.className = 'sudoku-row';
     for (let j = 0; j < SIZE; j++) {
       const input = document.createElement('input');
+      input.dataset.region =
+        (Math.floor(i / 3) + Math.floor(j / 3)) % 2 === 0
+          ? 'base'
+          : 'alternate';
       input.type = 'text';
       input.maxLength = 1;
       input.className = 'sudoku-cell';

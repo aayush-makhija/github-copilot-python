@@ -14,6 +14,8 @@
   --invalid-border: #d32f2f;
   --accent: #1976d2;
   --accent-hover: #1565c0;
+  --region-base-bg: #fafafa;
+  --region-alternate-bg: #eef5ff;
 }
 
 :root[data-theme='dark'] {
@@ -32,6 +34,8 @@
   --invalid-border: #ef5350;
   --accent: #42a5f5;
   --accent-hover: #64b5f6;
+  --region-base-bg: #252525;
+  --region-alternate-bg: #303b46;
 }
 
 body {
@@ -67,9 +71,13 @@ h1 {
   text-align: center;
   font-size: 20px;
   outline: none;
-  background: var(--cell-bg);
   color: var(--text);
   transition: background 0.2s;
+  background: var(--region-base-bg);
+}
+
+.sudoku-cell[data-region='alternate'] {
+  background: var(--region-alternate-bg);
 }
 
 .sudoku-cell:focus {
